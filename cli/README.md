@@ -23,6 +23,12 @@ npm install
 Make the CLI executable
 ```bash
 chmod +x index.js
+sudo npm link
+```
+
+After testing uninstall the global link
+```bash
+npm unlink -g
 ```
 
 ## Configuration
@@ -37,7 +43,7 @@ BACKEND_URL=http://localhost:3000
 1. Submit a job
 
     ```bash
-    ./index.js submit \
+    qgjob submit \
     --org-id=qualgent \
     --app-version-id=xyz123 \
     --test=tests/onboarding.spec.js
@@ -46,7 +52,7 @@ BACKEND_URL=http://localhost:3000
 2. Check Job Staus
 
     ```bash
-    ./index.js status --id=<job_id>
+    qgjob status --id=<job_id>
     ```
 
 ## Tech Stack
