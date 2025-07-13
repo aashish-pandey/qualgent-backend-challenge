@@ -1,13 +1,17 @@
 import {v4 as uuidv4} from "uuid";
 import { jobStore }from "./memoryStore.js";
 
+import {
+    addJobToGroup,
+    getGroupKey,
+    hasGroup
+} from "./groupedJobStore.js";
+
+import {addGroupToPriorityQueue} from "./priorityQueue.js";
+
 export function submitJob(data){
 
-    console.log("hi");
-    console.log(data);
-
     if(!data || !data.org_id || !data.app_version_id || !data.test){
-        console.log("hi from error");
         throw new Error("Missing required fields on job submission");
     }else{
         const job = {
@@ -15,6 +19,7 @@ export function submitJob(data){
         org_id: data.org_id,
         app_version_id: data.app_version_id,
         test_path: data.test,
+        target: data.target || "mobile",
         priority: data.priority || 1,
         status: "pending",
         retries: 0,
@@ -22,6 +27,18 @@ export function submitJob(data){
         };
 
         jobStore[job.id] = job;
+
+        //add to grouped store
+        addJobToGroup(data.org_id, data.app_version_id, job);
+
+        //push group key to priority queue only if it's new
+        const groupKey = getGroupKey(data.org_id, data.app_version_id);
+        if(!hasGroupInQueue(groupKey)){
+            addGroupToPriorityQueue(groupKey, job.priority); //just storing group key not the job id
+        }
+
+
+
         return job;
     }
 
