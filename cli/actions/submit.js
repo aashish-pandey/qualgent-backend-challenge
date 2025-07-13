@@ -18,10 +18,10 @@ export default async function handleSubmit(options){
             app_version_id: appVersionId,
             test
         }
-        const res = await post("/submit", data);
+        const res = await post("/submit-job", data);
         console.log("Job submitted successfully");
-        console.log("Job ID: ", res.id);
-        console.log("status: ", res.status);
+        console.log("Job ID: ", res.job.id);
+        console.log("status: ", res.job.status);
     }catch(err){
         console.error('Submission failed:', err.message);
     }
