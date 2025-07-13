@@ -1,2 +1,2 @@
-./backend/node_modules
-./cli/node_modules
+# Ignore node modules in all folders
+node_modules/
