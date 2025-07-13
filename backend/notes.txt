@@ -1,0 +1,48 @@
+Following are the features that needs to be taken care of:
+
+    1. Accept job submissions
+    2. Group jobs by app version
+    3. Assign jobs to agents
+    4. Track job status
+    5. retry failed jobs
+    6. prioritization within orgs
+    7. horizontal scaling
+
+
+Designing:
+
+    1. horizontal scaling:
+        I need to implement a shared db or queue that can be accessed by all instances of the backend. The backend instant should be stateless
+        to make this possible. For initial version, I am going with a separate module (in-memory) which can be later replaced by standard redis For
+        production quality.
+
+    2: accepting jobs, grouping and assigning them:
+
+        I will use a two-stage storage mechanism to manage job scheduling:
+
+            1. Initial Submission Queue:
+                All incoming jobs submitted via the CLI will be temporarily cached in this queue as raw, ungrouped jobs.
+
+            2. Ready-to-Assign Queue:
+                A grouping function will periodically pull jobs from the initial queue, sort them based on priority and submission time, and group them by app_version_id when possible. These grouped jobs will then be moved into the ready-to-assign queue, where agents can fetch and execute them.
+
+        Starvation Handling:
+            If jobs for the same app_version_id keep arriving continuously, there’s a risk that other app versions may never get assigned to a device — leading to starvation.
+            To mitigate this, I implement time-bound grouping:
+                If the time difference between the first job in a group and any newly submitted job exceeds 10 hours, the new job will not be grouped with the old one — even if the app_version_id matches.
+                This introduces a controlled trade-off:
+                    Prevents starvation of other app versions
+                    May cause additional overhead due to app reinstallations — but ensures fair scheduling
+
+
+Proposed file structure:
+    backend/
+        │
+        ├── index.js                  # Main server entry point (Express app)
+        ├── jobQueue.js               # Core job store & queue logic (in-memory now, Redis later)
+        ├── jobUtils.js               # Optional helper functions (e.g. grouping, sorting)
+        ├── jobResults.js             # Tracks final job outputs/logs
+        ├── agentSessionManager.js    # (Optional) Active app_version sessions & starvation logic
+        ├── constants.js              # Common enums, max retries, timeouts
+        └── data/                     # (Optional) Save in-memory snapshot for debugging
+            └── snapshot.json
