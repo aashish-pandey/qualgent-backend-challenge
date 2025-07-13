@@ -37,12 +37,29 @@ Designing:
 
 Proposed file structure:
     backend/
-        │
-        ├── index.js                  # Main server entry point (Express app)
-        ├── jobQueue.js               # Core job store & queue logic (in-memory now, Redis later)
-        ├── jobUtils.js               # Optional helper functions (e.g. grouping, sorting)
-        ├── jobResults.js             # Tracks final job outputs/logs
-        ├── agentSessionManager.js    # (Optional) Active app_version sessions & starvation logic
-        ├── constants.js              # Common enums, max retries, timeouts
-        └── data/                     # (Optional) Save in-memory snapshot for debugging
-            └── snapshot.json
+        -store/ #contains all the storage or db stuffs
+            -jobQueue.js //contains logic to interact with storage
+            -memoryStore.js //acts as the db
+        -index.js  //starting point containing the routes
+        -.env //contains the secret keys or other params
+
+
+
+
+
+index.js :
+    contains three routes:
+        1. submit job:
+            to submit the job
+        2. get job by id 
+            to check if the job is correctly submitted or not 
+        3. get job status 
+            to get the status of job 
+
+        routes 1 and 3 will be used by CLI to fulfill the assignment.
+
+
+
+
+
+    Its too boring that i will need to manually create the
