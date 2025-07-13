@@ -16,7 +16,7 @@ Clone the repository and install dependencies:
 
 ```bash
 git clone https://github.com/yourusername/qualgent-cli.git
-cd qualgent-cli
+cd cli
 npm install
 ```
 
