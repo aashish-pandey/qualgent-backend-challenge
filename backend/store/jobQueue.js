@@ -7,7 +7,7 @@ import {
     hasGroup
 } from "./groupedJobStore.js";
 
-import {addGroupToPriorityQueue} from "./priorityQueue.js";
+import {addGroupToPriorityQueue, hasGroupInQueue} from "./priorityQueue.js";
 
 export function submitJob(data){
 

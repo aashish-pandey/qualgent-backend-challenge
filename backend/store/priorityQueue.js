@@ -23,7 +23,7 @@ export function addGroupToPriorityQueue(groupKey, priority){
  * @param {string} groupKey 
  */
 export function hasGroupInQueue(groupKey){
-    return groupKeySet.has(groupKey);
+    return groupKeySet.has(groupKey) || [];
 }
 
 /**

@@ -12,6 +12,11 @@ import {
     incrementRetry,
 } from './store/jobQueue.js';
 
+import { schedularLoop } from './schedular/schedular.js';
+import { addJobToGroup, getGroupKey, hasGroup } from './store/groupedJobStore.js';
+import { addGroupToPriorityQueue, hasGroupInQueue } from './store/priorityQueue.js';
+import { registerAgent } from './agents/agentManager.js';
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -24,6 +29,17 @@ app.use(bodyParser.json());
 app.post("/submit-job", (req, res)=>{
     try{
         const job = submitJob(req.body);
+
+        //Add to grouped job store
+        addJobToGroup(job.org_id, job.app_version_id, job);
+
+        //push to priority queue only if group is not already queued
+        const groupKey = getGroupKey(job.org_id, job.app_version_id);
+        if(!hasGroupInQueue(groupKey)){
+            addGroupToPriorityQueue(groupKey, job.priority);
+        }
+
+
         res.status(201).json({message: "Job Submitted", job});
     }catch(err){
         console.error("Job submitted failed:", err.message);
@@ -60,3 +76,10 @@ app.listen(PORT, ()=>{
     }
 
 })
+
+//Start schedular loop and register initial agents
+schedularLoop();
+
+registerAgent("agent-1");
+registerAgent("agent-2");
+console.log("Registered agents: agent-1, agent-2");
