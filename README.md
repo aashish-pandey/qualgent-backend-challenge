@@ -1,24 +1,91 @@
-# QualGent Backend Coding Challenge
+# Qualgent Job Orchestrator
 
-## Structure
-/backend
-    This repo implements a modular backend for a test orchestration system. It supports job submission, grouping, agent assignment, and retry logic.
+This repository contains the complete system for submitting and processing test jobs via CLI and a backend server that handles scheduling, grouping, and agent assignment.
 
-    See `backend/notes.txt` for architecture decisions and design rationale.
-## Design Summary
-    CLI submits job
+## Folder Structure
 
-    Backend stores it in a global job store
+- `cli/` — A command-line interface tool for submitting and checking the status of jobs.
+- `backend/` — The job orchestration server with in-memory stores for jobs, agents, and queues.
 
-    Grouping: Jobs with the same (org_id, app_version_id) are grouped into a "family"
+---
 
-    Priority Queue: Group is added to a priority queue once per key
+## Getting Started
 
-    New jobs with the same key are merged into the existing group
+### 1. Clone the Repository
 
-    Agent Assignment:
+```bash
+git clone https://github.com/your-username/qualgent-backend-challenge.git
+cd qualgent-backend-challenge
+```
 
-    Idle agents pick a group from the queue
+---
 
-    If a group is already running on an agent and a new job for that group arrives,
-    it’s assigned to the same agent (rather than triggering another install/setup)
+## Backend Setup
+
+### Prerequisites
+- Node.js >= 18
+- npm
+
+### Steps
+
+```bash
+cd backend
+npm install
+npm start
+```
+
+The backend server should now be running on `http://localhost:3000`.
+
+---
+
+## CLI Setup
+
+### Prerequisites
+- Node.js >= 18
+- npm
+
+### Steps
+
+```bash
+cd cli
+npm install
+npm link   # This registers the CLI tool globally as `qgjob`
+```
+
+### Example Usage
+
+```bash
+qgjob submit --org-id=qualgent --app-version-id=xyz123 --test=tests/onboarding.spec.js
+qgjob status --id=<job-id>
+```
+
+---
+
+## Architecture Overview
+
+1. **Job Submission**:
+   - CLI sends the job data to the backend via REST API.
+
+2. **Job Grouping & Queuing**:
+   - The backend groups jobs based on `org_id` and `app_version_id`.
+   - Grouped jobs are pushed into a priority queue if not already queued.
+
+3. **Agent Assignment**:
+   - Agents are registered and available to take jobs.
+   - Jobs are dispatched based on agent availability and grouping.
+
+4. **Job Tracking**:
+   - The backend stores status for each job.
+   - CLI queries this status using job ID.
+
+---
+
+## Development Notes
+
+- The backend uses in-memory stores and queues which can be replaced by Redis for production-grade systems.
+- Priority-based scheduling and grouping prevent starvation and enable fair resource utilization.
+- Agents simulate execution but can be replaced by real workers in future iterations.
+
+---
+
+
