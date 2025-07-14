@@ -23,7 +23,8 @@ export function addGroupToPriorityQueue(groupKey, priority){
  * @param {string} groupKey 
  */
 export function hasGroupInQueue(groupKey){
-    return groupKeySet.has(groupKey) || [];
+
+    return groupKeySet.has(groupKey);
 }
 
 /**
@@ -52,4 +53,25 @@ export function peekNextGroup(){
  */
 export function isPriorityQueueEmpty(){
     return priorityQueue.isEmpty();
+}
+
+
+export function printPriorityQueueState() {
+    console.log("\n=== 📊 Priority Queue State ===");
+
+    if (priorityQueue.isEmpty()) {
+        console.log("  (empty)");
+        return;
+    }
+
+    // WARNING: This will not mutate the actual queue
+    const snapshot = priorityQueue.toArray();
+
+    snapshot.sort((a, b) => a.priority - b.priority); // Ensure sorted by priority
+
+    snapshot.forEach((item, index) => {
+        console.log(`  ${index + 1}. GroupKey: ${item.groupKey}, Priority: ${item.priority}`);
+    });
+
+    console.log("==============================\n");
 }

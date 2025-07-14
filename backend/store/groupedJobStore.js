@@ -42,3 +42,22 @@ export function hasGroup(orgId, appVersionId){
     return groupedJobStore.has(getGroupKey(orgId, appVersionId));
 }
 
+
+
+export function printGroupedJobStoreState() {
+    console.log("\n=== 🗂️ Grouped Job Store State ===");
+
+    if (groupedJobStore.size === 0) {
+        console.log("  (empty)");
+        return;
+    }
+
+    for (const [groupKey, jobs] of groupedJobStore.entries()) {
+        console.log(`\nGroup: ${groupKey}`);
+        jobs.forEach((job, idx) => {
+            console.log(`  ${idx + 1}. Job ID: ${job.id}, Status: ${job.status}`);
+        });
+    }
+
+    console.log("==================================\n");
+}

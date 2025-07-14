@@ -1,5 +1,5 @@
-import { isPriorityQueueEmpty, popNextGroup, peekNextGroup } from "../store/priorityQueue.js";
-import { getJobsInGroup, popGroup } from "../store/groupedJobStore.js";
+import { isPriorityQueueEmpty, popNextGroup, peekNextGroup, printPriorityQueueState } from "../store/priorityQueue.js";
+import { getJobsInGroup, popGroup, printGroupedJobStoreState } from "../store/groupedJobStore.js";
 import {
     findAgentForGroup,
     assignAgent,
@@ -8,13 +8,28 @@ import {
     releaseAgent,
     registerAgent,
     isAgentFree,
-    getFreeAgentsId
+    getFreeAgentsId,
+    printAgentState
 } from "../agents/agentManager.js";
-import { updateJobStatus } from "../store/jobQueue.js";
+import { updateJobStatus, printJobStoreState } from "../store/jobQueue.js";
+
+
+export function debugAllStates() {
+    console.log("\n================= 🔍 DEBUG SYSTEM STATE =================");
+
+    printAgentState();
+    printGroupedJobStoreState();
+    printPriorityQueueState();
+    printJobStoreState();
+
+    console.log("=========================================================\n");
+}
+
 
 //Simulated worker loop (can later be upgraded to actual agent messaging)
 export function schedularLoop(){
     setInterval(()=>{
+        debugAllStates();
         
         if(isPriorityQueueEmpty()){
             console.log("Priority Queue empty");
@@ -23,12 +38,18 @@ export function schedularLoop(){
 
         const groupKey = peekNextGroup();
 
-        if(!groupKey)return;
+        if(!groupKey){
+            console.log("No group key found");
+            return;
+        }
 
         const [orgId, appVersionId] = groupKey.split("|");
         const jobs = getJobsInGroup(orgId, appVersionId);
 
-        if(jobs.length == 0)return;
+        if(jobs.length == 0){
+            console.log("No pending jobs found")
+            return;
+        }
 
         const existingAgent = findAgentForGroup(orgId, appVersionId);
 
@@ -40,9 +61,12 @@ export function schedularLoop(){
             });
             popNextGroup(); //removing the added job from priority queue a.k.a. ready queue
         }else{
+            console.log(`Assigning ${jobs.length} jobs to new agent`);
             const freeAgents = getFreeAgentsId();
-            if(freeAgents.length > 0){
-                const availableAgent = freeAgents[0];
+            console.log(freeAgents);
+            console.log(freeAgents.size);
+            if(freeAgents.size > 0){
+                const availableAgent = freeAgents.values().next().value;
                 assignAgent(availableAgent, orgId, appVersionId);
 
                 jobs.forEach(job=>{
@@ -58,6 +82,6 @@ export function schedularLoop(){
         }
 
 
-    }, 1000) //Pool every one second
+    }, 3000) //Pool every one second
 }
 

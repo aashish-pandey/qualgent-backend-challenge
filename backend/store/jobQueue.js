@@ -37,8 +37,6 @@ export function submitJob(data){
             addGroupToPriorityQueue(groupKey, job.priority); //just storing group key not the job id
         }
 
-
-
         return job;
     }
 
@@ -72,4 +70,25 @@ export function incrementRetry(jobId){
         jobStore[jobId].retries += 1;
         jobStore[jobId].status = "pending";
     }
+}
+
+export function printJobStoreState() {
+    console.log("\n=== 📋 Job Store State ===");
+
+    const jobIds = Object.keys(jobStore);
+    if (jobIds.length === 0) {
+        console.log("No jobs in the store.");
+        return;
+    }
+
+    jobIds.forEach(id => {
+        const job = jobStore[id];
+        console.log(`🧪 Job ID: ${id}`);
+        console.log(`   Org: ${job.org_id}, App Version: ${job.app_version_id}`);
+        console.log(`   Status: ${job.status}, Priority: ${job.priority}, Retries: ${job.retries}`);
+        console.log(`   Target: ${job.target}, Test Path: ${job.test_path}`);
+        console.log(`   Created At: ${new Date(job.created_at).toLocaleString()}`);
+    });
+
+    console.log("\n=================================================");
 }

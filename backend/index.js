@@ -30,16 +30,6 @@ app.post("/submit-job", (req, res)=>{
     try{
         const job = submitJob(req.body);
 
-        //Add to grouped job store
-        addJobToGroup(job.org_id, job.app_version_id, job);
-
-        //push to priority queue only if group is not already queued
-        const groupKey = getGroupKey(job.org_id, job.app_version_id);
-        if(!hasGroupInQueue(groupKey)){
-            addGroupToPriorityQueue(groupKey, job.priority);
-        }
-
-
         res.status(201).json({message: "Job Submitted", job});
     }catch(err){
         console.error("Job submitted failed:", err.message);

@@ -55,6 +55,8 @@ export function pushJobToAgent(agentId, job){
 
     //if this is the only job, simulate work immediately
     if(queue.length == 1){
+        // console.log("agent id inside push job to agent");
+        // console.log(agentId);
         simulateAgentWork(agentId);
     }
 }
@@ -64,6 +66,8 @@ export function pushJobToAgent(agentId, job){
  */
 export function releaseAgent(agentId, orgId, appVersionId){
     const key = getGroupKey(orgId, appVersionId);
+    console.log(key);
+    console.log("inside release agent");
     runningAgents.delete(key);
     agentJobQueues.delete(agentId);
     freeAgents.add(agentId);
@@ -84,8 +88,45 @@ export function getAgentJobs(agentId){
 }
 
 
+export function printAgentState(){
+    console.log("\n=== Agent System State ====");
+    console.log("\n Free Agents:");
+
+    if(freeAgents.size === 0){
+        console.log("{ none }");
+    }else{
+        for(const agentId of freeAgents){
+            console.log(` - ${agentId}`);
+        }
+    }
+
+    console.log("\nRunning Agents");
+    if(runningAgents.size === 0){
+        console.log(" { none }");
+    }else{
+        for(const [groupKey, agentId] of runningAgents.entries()){
+            console.log(` - ${agentId} running ${groupKey}`);
+        }
+    }
+
+    console.log("\n Agent job queues:");
+    if(agentJobQueues.size === 0){
+        console.log(" { none }");
+    }else{
+        for(const [agentId, queue] of agentJobQueues.entries()){
+            const jobIds = queue.map(j => j.id);
+            console.log(` - ${agentId}: [${jobIds.join(", ")}]`);
+        }
+    }
+
+    console.log("\n=================================================\n");
+}
+
+
 //simulating agent work : will be replaced later
 export function simulateAgentWork(agentId){
+    console.log("inside the simulate agent work");
+    console.log(agentId);
     const queue = agentJobQueues.get(agentId);
 
     if(!queue || queue.length == 0){
@@ -98,13 +139,13 @@ export function simulateAgentWork(agentId){
 
     setTimeout(()=>{
         updateJobStatus(job.id, "done");
-        console.log(`[Agent ${agentId} Completed Job ${job.id}]`);
+        // console.log(`[Agent ${agentId} Completed Job ${job.id}]`);
         queue.shift(); //removing job after it is done
 
         //if no more jobs left, release agent
         if(queue.length === 0){
-            releaseAgent(agentId, job.org_id, job.appVersionId);
-            console.log(`[Agent ${agentId}] is now free`);
+            releaseAgent(agentId, job.org_id, job.app_version_id);
+            // console.log(`[Agent ${agentId}] is now free`);
         }else{
             //continue working on next job
             simulateAgentWork(agentId);
