@@ -1,65 +1,24 @@
-Following are the features that needs to be taken care of:
+Design Overview
 
-    1. Accept job submissions
-    2. Group jobs by app version
-    3. Assign jobs to agents
-    4. Track job status
-    5. retry failed jobs
-    6. prioritization within orgs
-    7. horizontal scaling
+1. Horizontal scaling
+    The backend is designed to be stateless. All shared data (jobs, queues, agent state) is stored in a centralized in-memory module for now. This module can later be replaced by a proper Redis or database implementation to support true horizontal scaling in a distributed system.
 
+        - Each backend instance reads and writes to the shared queue/storage layer.
+        - Internal logic assumes no instance-specific memory; all state is centralized.
 
-Designing:
+2. Job Submission, Grouping, and assignment
+    The system follows a multi-stage pipeline to process incoming jobs:
 
-    1. horizontal scaling:
-        I need to implement a shared db or queue that can be accessed by all instances of the backend. The backend instant should be stateless
-        to make this possible. For initial version, I am going with a separate module (in-memory) which can be later replaced by standard redis For
-        production quality.
+    Stage 1: Job Submission (Initial Storage)
+        - All jobs submitted via the CLI are validated and pushed to a global job store.
+        - Jobs are then grouped using a composite key: {org_id}|{app_version_id}.
 
-    2: accepting jobs, grouping and assigning them:
+    Stage 2: Grouped Job Store
+        - Jobs with the same app version and organization are grouped together to reduce setup redundancy.
+        - Grouping happens immediately at the time of submission.
+        - A separate priority queue tracks which groups are ready for agent assignment, based on priority and arrival time.
 
-        I will use a two-stage storage mechanism to manage job scheduling:
-
-            1. Initial Submission Queue:
-                All incoming jobs submitted via the CLI will be temporarily cached in this queue as raw, ungrouped jobs.
-
-            2. Ready-to-Assign Queue:
-                A grouping function will periodically pull jobs from the initial queue, sort them based on priority and submission time, and group them by app_version_id when possible. These grouped jobs will then be moved into the ready-to-assign queue, where agents can fetch and execute them.
-
-        Starvation Handling:
-            If jobs for the same app_version_id keep arriving continuously, there’s a risk that other app versions may never get assigned to a device — leading to starvation.
-            To mitigate this, I implement time-bound grouping:
-                If the time difference between the first job in a group and any newly submitted job exceeds 10 hours, the new job will not be grouped with the old one — even if the app_version_id matches.
-                This introduces a controlled trade-off:
-                    Prevents starvation of other app versions
-                    May cause additional overhead due to app reinstallations — but ensures fair scheduling
-
-
-Proposed file structure:
-    backend/
-        -store/ #contains all the storage or db stuffs
-            -jobQueue.js //contains logic to interact with storage
-            -memoryStore.js //acts as the db
-        -index.js  //starting point containing the routes
-        -.env //contains the secret keys or other params
-
-
-
-
-
-index.js :
-    contains three routes:
-        1. submit job:
-            to submit the job
-        2. get job by id 
-            to check if the job is correctly submitted or not 
-        3. get job status 
-            to get the status of job 
-
-        routes 1 and 3 will be used by CLI to fulfill the assignment.
-
-
-
-
-
-    Its too boring that i will need to manually create the
+    Stage 3: Ready Queue (Priority Queue)
+        - Each group is represented as a single entry in the priority queue.
+        - Groups are dequeued in order of priority and assigned to agents.
+        - If a group key is already being processed by an agent, additional jobs for the same group are routed to that agent’s internal queue.

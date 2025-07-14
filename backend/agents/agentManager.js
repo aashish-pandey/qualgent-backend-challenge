@@ -1,70 +1,88 @@
-//v1: simmulating that we have only one type of target not multiple(e.g. browserstack)
+// v1: Simulating a system where agents handle one type of target only (e.g., browserstack)
 
 import { getGroupKey } from "../store/groupedJobStore.js";
 import { updateJobStatus } from "../store/jobQueue.js";
 
+// Stores IDs of agents that are currently free
 const freeAgents = new Set();
+
+// Maps groupKey (orgId + appVersionId) to agentId (i.e., running agents)
 const runningAgents = new Map();
+
+// Maps agentId to their respective job queue
 const agentJobQueues = new Map();
 
 /**
- * Add a new  agent to a system as free
+ * Register a new agent as free (available to take jobs)
+ * @param {string} agentId - Unique identifier of the agent
  */
-export function registerAgent(agentId){
+export function registerAgent(agentId) {
     freeAgents.add(agentId);
 }
 
 /**
- * Check if Agent is free (probably no use of this function in current use case)
+ * Check if an agent is currently free
+ * @param {string} agentId
+ * @returns {boolean}
  */
-export function isAgentFree(agentId){
+export function isAgentFree(agentId) {
     return freeAgents.has(agentId);
 }
 
 /**
- * Assign new agent to a group . use this function when no agent is running current group
+ * Assign a free agent to a specific group
+ * @param {string} agentId
+ * @param {string} orgId
+ * @param {string} appVersionId
  */
-export function assignAgent(agentId, orgId, appVersionId){
+export function assignAgent(agentId, orgId, appVersionId) {
     freeAgents.delete(agentId);
-    const key =  getGroupKey(orgId, appVersionId);
+    const key = getGroupKey(orgId, appVersionId);
     runningAgents.set(key, agentId);
     agentJobQueues.set(agentId, []);
 }
 
 /**
- * Check if an agent is already running job for given group. 
+ * Find if any agent is currently running jobs for the given group
+ * @param {string} orgId
+ * @param {string} appVersionId
+ * @returns {string|null} agentId or null if not found
  */
-export function findAgentForGroup(orgId, appVersionId){
+export function findAgentForGroup(orgId, appVersionId) {
     const key = getGroupKey(orgId, appVersionId);
-    if(runningAgents.has(key)){
+    if (runningAgents.has(key)) {
         return runningAgents.get(key);
     }
     return null;
 }
 
 /**
- * Push job to an agent's queue. use this when any agent is running the same group. 
+ * Push a job to a specific agent's job queue
+ * If it's the first job, immediately simulate processing
+ * @param {string} agentId
+ * @param {object} job
  */
-export function pushJobToAgent(agentId, job){
-    if(!agentJobQueues.has(agentId)){
+export function pushJobToAgent(agentId, job) {
+    if (!agentJobQueues.has(agentId)) {
         agentJobQueues.set(agentId, []);
     }
 
     const queue = agentJobQueues.get(agentId);
     queue.push(job);
 
-    //if this is the only job, simulate work immediately
-    if(queue.length == 1){
-        // console.log("agent id inside push job to agent");
-        // console.log(agentId);
+    // Simulate processing only if the queue was empty
+    if (queue.length === 1) {
         simulateAgentWork(agentId);
     }
 }
 
 /**
- * Mark agent as free again
+ * Release an agent from a group and mark it as free again
+ * @param {string} agentId
+ * @param {string} orgId
+ * @param {string} appVersionId
  */
-export function releaseAgent(agentId, orgId, appVersionId){
+export function releaseAgent(agentId, orgId, appVersionId) {
     const key = getGroupKey(orgId, appVersionId);
     console.log(key);
     console.log("inside release agent");
@@ -74,46 +92,51 @@ export function releaseAgent(agentId, orgId, appVersionId){
 }
 
 /**
- * Get all free agents
+ * Get all currently free agents
+ * @returns {Set<string>} Set of agentIds
  */
-export function getFreeAgentsId(){
+export function getFreeAgentsId() {
     return new Set(freeAgents);
 }
 
 /**
- * Get current jobs for debugging/logging
+ * Get the current job queue for a given agent
+ * @param {string} agentId
+ * @returns {object[]} Array of jobs
  */
-export function getAgentJobs(agentId){
+export function getAgentJobs(agentId) {
     return agentJobQueues.get(agentId) || [];
 }
 
-
-export function printAgentState(){
+/**
+ * Log the current internal state of the agent system
+ */
+export function printAgentState() {
     console.log("\n=== Agent System State ====");
-    console.log("\n Free Agents:");
 
-    if(freeAgents.size === 0){
+    console.log("\n Free Agents:");
+    if (freeAgents.size === 0) {
         console.log("{ none }");
-    }else{
-        for(const agentId of freeAgents){
+    } else {
+        for (const agentId of freeAgents) {
             console.log(` - ${agentId}`);
         }
     }
 
     console.log("\nRunning Agents");
-    if(runningAgents.size === 0){
+    if (runningAgents.size === 0) {
         console.log(" { none }");
-    }else{
-        for(const [groupKey, agentId] of runningAgents.entries()){
+    } else {
+        for (const [groupKey, agentId] of runningAgents.entries()) {
             console.log(` - ${agentId} running ${groupKey}`);
         }
     }
 
     console.log("\n Agent job queues:");
-    if(agentJobQueues.size === 0){
+    if (agentJobQueues.size === 0) {
         console.log(" { none }");
-    }else{
-        for(const [agentId, queue] of agentJobQueues.entries()){
+    } else {
+        for (const [agentId, queue] of agentJobQueues.entries()) {
             const jobIds = queue.map(j => j.id);
             console.log(` - ${agentId}: [${jobIds.join(", ")}]`);
         }
@@ -122,34 +145,33 @@ export function printAgentState(){
     console.log("\n=================================================\n");
 }
 
-
-//simulating agent work : will be replaced later
-export function simulateAgentWork(agentId){
+/**
+ * Simulate an agent working on a job from its queue
+ * Automatically proceeds to the next job after a delay
+ * @param {string} agentId
+ */
+export function simulateAgentWork(agentId) {
     console.log("inside the simulate agent work");
     console.log(agentId);
     const queue = agentJobQueues.get(agentId);
 
-    if(!queue || queue.length == 0){
+    if (!queue || queue.length == 0) {
         runningAgents.delete(agentId);
         return;
     }
-    const job = queue[0]; //get the next job
+
+    const job = queue[0]; // Pick next job
 
     console.log(`[Agent ${agentId}] started job ${job.id}`);
 
-    setTimeout(()=>{
+    setTimeout(() => {
         updateJobStatus(job.id, "done");
-        // console.log(`[Agent ${agentId} Completed Job ${job.id}]`);
-        queue.shift(); //removing job after it is done
+        queue.shift(); // Remove completed job
 
-        //if no more jobs left, release agent
-        if(queue.length === 0){
+        if (queue.length === 0) {
             releaseAgent(agentId, job.org_id, job.app_version_id);
-            // console.log(`[Agent ${agentId}] is now free`);
-        }else{
-            //continue working on next job
-            simulateAgentWork(agentId);
+        } else {
+            simulateAgentWork(agentId); // Continue to next
         }
-
-    }, 3000)//simulate 3s work
+    }, 3000); // Simulated delay
 }
