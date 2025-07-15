@@ -1,0 +1,59 @@
+name: Run qgjob CLI Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        npm install
+
+    - name: Start backend server
+      run: |
+        cd backend
+        nohup npm start &
+        sleep 5
+
+    - name: Install CLI tool
+      run: |
+        cd cli
+        npm install
+        npm link
+
+    - name: Submit job via CLI
+      run: |
+        qgjob submit --org-id=testOrg --app-version-id=testApp --test=tests/sample.spec.js > output.json
+
+    - name: Poll job status
+      run: |
+        JOB_ID=$(cat output.json | grep 'Job ID' | awk '{print $3}')
+        echo "Polling for job ID: $JOB_ID"
+
+        ATTEMPTS=10
+        for i in $(seq 1 $ATTEMPTS); do
+          STATUS=$(qgjob status --id=$JOB_ID | grep 'status' | awk '{print $2}')
+          echo "Attempt $i: Status is $STATUS"
+          if [ "$STATUS" = "done" ]; then
+            exit 0
+          fi
+          sleep 3
+        done
+
+        echo "Job did not complete successfully in time"
+        exit 1
